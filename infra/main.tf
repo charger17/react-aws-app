@@ -63,9 +63,10 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
 }
 
 resource "aws_cloudfront_distribution" "cdn" {
-  count               = var.create_bucket ? 1 : 0
+  count = var.create_bucket ? 1 : 0
+
   enabled             = true
-  comment             = "CloudFront Distribution para React App"
+  comment             = "CloudFront Distribution for React App"
   price_class         = "PriceClass_100"
   is_ipv6_enabled     = true
   default_root_object = "index.html"
@@ -75,7 +76,7 @@ resource "aws_cloudfront_distribution" "cdn" {
     origin_id   = "S3-react-app"
 
     s3_origin_config {
-      origin_access_identity = aws_cloudfront_origin_access_identity.origin_access_identity[0].cloudfront_access_identity_path
+      origin_access_identity = "origin-access-identity/cloudfront/${aws_cloudfront_origin_access_identity.origin_access_identity[0].id}"
     }
   }
 
@@ -111,9 +112,10 @@ resource "aws_cloudfront_distribution" "cdn" {
 }
 
 resource "aws_cloudfront_distribution" "cdn_external" {
-  count               = var.create_bucket ? 0 : 1
+  count = var.create_bucket || length(var.s3_static_domain) == 0 ? 0 : 1
+
   enabled             = true
-  comment             = "CloudFront Distribution para bucket externo"
+  comment             = "CloudFront Distribution for External S3 Bucket"
   price_class         = "PriceClass_100"
   is_ipv6_enabled     = true
   default_root_object = "index.html"
