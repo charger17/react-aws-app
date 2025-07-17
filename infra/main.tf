@@ -194,7 +194,7 @@ data "aws_vpc" "default" {
 # --- Security Group para EC2 ---
 
 resource "aws_security_group" "ec2_sg" {
-  name        = "allow_http_ssh"
+  name        = "allow_http_ssh_"
   description = "Permite acceso HTTP y SSH"
   vpc_id      = data.aws_vpc.default.id
 
