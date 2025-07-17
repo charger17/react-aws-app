@@ -2,21 +2,11 @@ variable "aws_region" {
   description = "Región de AWS"
   type        = string
   default     = "us-east-1"
-
-  validation {
-    condition     = can(regex("^(us|eu|ap)-[a-z]+-[0-9]$", var.aws_region))
-    error_message = "La región debe tener formato como us-east-1, eu-west-3, ap-southeast-2."
-  }
 }
 
 variable "s3_bucket_name" {
   description = "Nombre único del bucket S3"
   type        = string
-
-  validation {
-    condition     = length(var.s3_bucket_name) >= 3 && length(var.s3_bucket_name) <= 63
-    error_message = "El nombre del bucket debe tener entre 3 y 63 caracteres."
-  }
 }
 
 variable "create_bucket" {
@@ -35,4 +25,22 @@ variable "s3_static_domain" {
   description = "Dominio del bucket S3 si no se crea con Terraform"
   type        = string
   default     = ""
+}
+
+# Variables para EC2
+variable "ec2_ami" {
+  description = "AMI para la instancia EC2"
+  type        = string
+  default     = "ami-0a313d6098716f372" # Ejemplo para us-east-1 (Ubuntu 22.04)
+}
+
+variable "ec2_instance_type" {
+  description = "Tipo de instancia EC2"
+  type        = string
+  default     = "t3.micro"
+}
+
+variable "ec2_key_name" {
+  description = "Nombre del Key Pair para EC2"
+  type        = string
 }

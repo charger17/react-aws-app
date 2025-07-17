@@ -12,6 +12,8 @@ provider "aws" {
   region = var.aws_region
 }
 
+# --- S3 Bucket y CloudFront (tu configuración actual) ---
+
 resource "aws_s3_bucket" "react_app_bucket" {
   count  = var.create_bucket ? 1 : 0
 
@@ -34,7 +36,6 @@ resource "aws_s3_bucket_versioning" "react_app_bucket_versioning" {
     status = "Enabled"
   }
 }
-
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "default" {
   count = var.create_bucket ? 1 : 0
@@ -182,4 +183,70 @@ output "cloudfront_domain_name" {
 
 output "cloudfront_distribution_id" {
   value = var.create_bucket && length(aws_cloudfront_distribution.cdn) > 0 ? aws_cloudfront_distribution.cdn[0].id : ( length(aws_cloudfront_distribution.cdn_external) > 0 ? aws_cloudfront_distribution.cdn_external[0].id : "")
+}
+
+# --- Datos de VPC ---
+
+data "aws_vpc" "default" {
+  default = true
+}
+
+# --- Security Group para EC2 ---
+
+resource "aws_security_group" "ec2_sg" {
+  name        = "allow_http_ssh"
+  description = "Permite acceso HTTP y SSH"
+  vpc_id      = data.aws_vpc.default.id
+
+  ingress {
+    description = "SSH"
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description = "HTTP"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = {
+    Name        = "allow_http_ssh"
+    Environment = var.environment
+  }
+}
+
+# --- Instancia EC2 ---
+
+resource "aws_instance" "app_server" {
+  ami                    = var.ec2_ami
+  instance_type          = var.ec2_instance_type
+  key_name               = var.ec2_key_name
+  vpc_security_group_ids = [aws_security_group.ec2_sg.id]
+
+  tags = {
+    Name        = "app-server"
+    Environment = var.environment
+  }
+}
+
+# --- Outputs para EC2 ---
+
+output "ec2_instance_public_ip" {
+  value = aws_instance.app_server.public_ip
+}
+
+output "ec2_instance_id" {
+  value = aws_instance.app_server.id
 }
