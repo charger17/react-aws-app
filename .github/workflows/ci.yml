@@ -157,20 +157,23 @@ jobs:
         name: react-build
         path: dist/
 
-    - name: Copy React build to EC2
+    - name: Copy React build to EC2 home folder
       uses: appleboy/scp-action@v0.1.1
       with:
         host: ${{ steps.get_ec2_ip.outputs.ec2_ip }}
         username: ubuntu
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         source: "dist/*"
-        target: "/var/www/html/"
+        target: "/home/ubuntu/react-app/"
 
-    - name: Restart nginx on EC2
+    - name: Move build to /var/www/html and restart nginx
       uses: appleboy/ssh-action@v0.1.9
       with:
         host: ${{ steps.get_ec2_ip.outputs.ec2_ip }}
         username: ubuntu
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         script: |
+          sudo mkdir -p /var/www/html
+          sudo rm -rf /var/www/html/*
+          sudo cp -r /home/ubuntu/react-app/* /var/www/html/
           sudo systemctl restart nginx
