@@ -24,3 +24,9 @@ variable "create_bucket" {
   type        = bool
   default     = true
 }
+
+variable "environment" {
+  description = "Nombre del entorno para etiquetado"
+  type        = string
+  default     = "dev"
+}
