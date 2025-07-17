@@ -111,16 +111,18 @@ jobs:
       - name: Debug terraform output content
         run: cat infra/tf_output.json
 
+      - name: Check cloudfront_distribution_id in tf_output.json
+        run: jq '.cloudfront_distribution_id.value' infra/tf_output.json
+
       - name: Get CloudFront Distribution ID
         id: get_cdn_id
         run: |
           cdn_id=$(jq -r '.cloudfront_distribution_id.value' infra/tf_output.json)
+          echo "Extracted CDN ID: $cdn_id"
           echo "cdn_id=$cdn_id" >> $GITHUB_OUTPUT
 
       - name: Deploy to S3
-        run: |
-          aws s3 sync dist/ s3://react-aws-app-bucket-charger17 --delete
+        run: aws s3 sync dist/ s3://react-aws-app-bucket-charger17 --delete
 
       - name: Invalidate CloudFront Cache
-        run: |
-          aws cloudfront create-invalidation --distribution-id ${{ steps.get_cdn_id.outputs.cdn_id }} --paths "/*"
+        run: aws cloudfront create-invalidation --distribution-id ${{ steps.get_cdn_id.outputs.cdn_id }} --paths "/*"
