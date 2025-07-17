@@ -166,14 +166,17 @@ jobs:
         source: "dist/*"
         target: "/home/ubuntu/react-app/"
 
-    - name: Move build to /var/www/html and restart nginx
+    - name: Move build and restart nginx
       uses: appleboy/ssh-action@v0.1.9
       with:
         host: ${{ steps.get_ec2_ip.outputs.ec2_ip }}
         username: ubuntu
         key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
         script: |
+          sudo apt update
+          sudo apt install -y nginx
           sudo mkdir -p /var/www/html
           sudo rm -rf /var/www/html/*
           sudo cp -r /home/ubuntu/react-app/* /var/www/html/
+          sudo systemctl enable nginx
           sudo systemctl restart nginx
