@@ -62,16 +62,18 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
 }
 
 resource "aws_cloudfront_distribution" "cdn" {
-  enabled         = true
-  is_ipv6_enabled = true
-  comment         = "CloudFront Distribution for React App"
+  enabled             = true
+  comment             = "CloudFront Distribution for React App"
+  price_class         = "PriceClass_100"
+  is_ipv6_enabled     = true
+  default_root_object = "index.html"
 
   origin {
-    domain_name = var.create_bucket ? aws_s3_bucket.react_app_bucket[0].bucket_regional_domain_name : var.s3_static_domain
+    domain_name = aws_s3_bucket.react_app_bucket.bucket_regional_domain_name
     origin_id   = "S3-react-app"
 
     s3_origin_config {
-      origin_access_identity = aws_cloudfront_origin_access_identity.origin_access_identity.cloudfront_access_identity_path
+      origin_access_identity = "origin-access-identity/cloudfront/${aws_cloudfront_origin_access_identity.origin_access_identity.id}"
     }
   }
 
@@ -90,17 +92,16 @@ resource "aws_cloudfront_distribution" "cdn" {
     }
   }
 
-  viewer_certificate {
-    cloudfront_default_certificate = true
-  }
-
   restrictions {
     geo_restriction {
       restriction_type = "none"
     }
   }
 
-  price_class = "PriceClass_100"
+  viewer_certificate {
+    cloudfront_default_certificate = true
+    minimum_protocol_version       = "TLSv1"
+  }
 
   tags = {
     Environment = var.environment
