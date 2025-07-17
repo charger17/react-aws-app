@@ -18,3 +18,9 @@ variable "s3_bucket_name" {
     error_message = "El nombre del bucket debe tener entre 3 y 63 caracteres."
   }
 }
+
+variable "create_bucket" {
+  description = "Indica si Terraform debe crear el bucket o no"
+  type        = bool
+  default     = true
+}

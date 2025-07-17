@@ -13,9 +13,11 @@ provider "aws" {
 }
 
 resource "aws_s3_bucket" "react_app_bucket" {
+  count  = var.create_bucket ? 1 : 0
+
   bucket = var.s3_bucket_name
 
-  acl    = "private"  # Mantenemos el bucket privado
+  acl    = "private"
 
   versioning {
     enabled = true
@@ -28,8 +30,12 @@ resource "aws_s3_bucket" "react_app_bucket" {
       }
     }
   }
+
+  lifecycle {
+    prevent_destroy = true
+  }
 }
 
 output "bucket_name" {
-  value = aws_s3_bucket.react_app_bucket.bucket
+  value = var.create_bucket ? aws_s3_bucket.react_app_bucket[0].bucket : var.s3_bucket_name
 }
