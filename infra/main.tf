@@ -40,6 +40,7 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "default" {
 }
 
 resource "aws_cloudfront_origin_access_identity" "origin_access_identity" {
+  count   = var.create_bucket ? 1 : 0
   comment = "Origin Access Identity for React App S3 Bucket"
 }
 
@@ -53,7 +54,7 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
     Statement = [{
       Effect = "Allow"
       Principal = {
-        AWS = aws_cloudfront_origin_access_identity.origin_access_identity.iam_arn
+        AWS = aws_cloudfront_origin_access_identity.origin_access_identity[0].iam_arn
       }
       Action   = "s3:GetObject"
       Resource = "${aws_s3_bucket.react_app_bucket[0].arn}/*"
@@ -62,18 +63,19 @@ resource "aws_s3_bucket_policy" "bucket_policy" {
 }
 
 resource "aws_cloudfront_distribution" "cdn" {
+  count               = var.create_bucket ? 1 : 0
   enabled             = true
-  comment             = "CloudFront Distribution for React App"
+  comment             = "CloudFront Distribution para React App"
   price_class         = "PriceClass_100"
   is_ipv6_enabled     = true
   default_root_object = "index.html"
 
   origin {
-    domain_name = var.create_bucket ? aws_s3_bucket.react_app_bucket[0].bucket_regional_domain_name : var.s3_static_domain
+    domain_name = aws_s3_bucket.react_app_bucket[0].bucket_regional_domain_name
     origin_id   = "S3-react-app"
 
     s3_origin_config {
-      origin_access_identity = var.create_bucket ? aws_cloudfront_origin_access_identity.origin_access_identity.cloudfront_access_identity_path : null
+      origin_access_identity = aws_cloudfront_origin_access_identity.origin_access_identity[0].cloudfront_access_identity_path
     }
   }
 
@@ -108,14 +110,65 @@ resource "aws_cloudfront_distribution" "cdn" {
   }
 }
 
+resource "aws_cloudfront_distribution" "cdn_external" {
+  count               = var.create_bucket ? 0 : 1
+  enabled             = true
+  comment             = "CloudFront Distribution para bucket externo"
+  price_class         = "PriceClass_100"
+  is_ipv6_enabled     = true
+  default_root_object = "index.html"
+
+  origin {
+    domain_name = var.s3_static_domain
+    origin_id   = "S3-external-bucket"
+
+    custom_origin_config {
+      http_port              = 80
+      https_port             = 443
+      origin_protocol_policy = "https-only"
+      origin_ssl_protocols   = ["TLSv1.2"]
+    }
+  }
+
+  default_cache_behavior {
+    allowed_methods  = ["GET", "HEAD"]
+    cached_methods   = ["GET", "HEAD"]
+    target_origin_id = "S3-external-bucket"
+
+    viewer_protocol_policy = "redirect-to-https"
+
+    forwarded_values {
+      query_string = false
+      cookies {
+        forward = "none"
+      }
+    }
+  }
+
+  restrictions {
+    geo_restriction {
+      restriction_type = "none"
+    }
+  }
+
+  viewer_certificate {
+    cloudfront_default_certificate = true
+    minimum_protocol_version       = "TLSv1"
+  }
+
+  tags = {
+    Environment = var.environment
+  }
+}
+
 output "bucket_name" {
   value = var.create_bucket ? aws_s3_bucket.react_app_bucket[0].bucket : var.s3_bucket_name
 }
 
 output "cloudfront_domain_name" {
-  value = aws_cloudfront_distribution.cdn.domain_name
+  value = var.create_bucket ? aws_cloudfront_distribution.cdn[0].domain_name : aws_cloudfront_distribution.cdn_external[0].domain_name
 }
 
 output "cloudfront_distribution_id" {
-  value = aws_cloudfront_distribution.cdn.id
+  value = var.create_bucket ? aws_cloudfront_distribution.cdn[0].id : aws_cloudfront_distribution.cdn_external[0].id
 }
