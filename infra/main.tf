@@ -69,7 +69,7 @@ resource "aws_cloudfront_distribution" "cdn" {
   default_root_object = "index.html"
 
   origin {
-    domain_name = aws_s3_bucket.react_app_bucket.bucket_regional_domain_name
+    domain_name = aws_s3_bucket.react_app_bucket[0].bucket_regional_domain_name
     origin_id   = "S3-react-app"
 
     s3_origin_config {
