@@ -174,7 +174,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
           script: |
             sudo apt update
-            sudo apt install -y nginx
+            sudo apt install -y awscli nginx
             sudo rm -rf /var/www/html/*
-            sudo cp -r /home/ubuntu/react-app/* /var/www/html/
+            aws s3 sync s3://react-aws-app-bucket-charger17 /var/www/html/
             sudo systemctl restart nginx
