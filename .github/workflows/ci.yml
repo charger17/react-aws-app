@@ -110,6 +110,9 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      - name: Debug terraform output content
+        run: cat infra/tf_output.json
+
       - name: Get CloudFront Distribution ID
         id: get_cdn_id
         run: |
