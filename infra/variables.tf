@@ -30,3 +30,9 @@ variable "environment" {
   type        = string
   default     = "dev"
 }
+
+variable "s3_static_domain" {
+  description = "Dominio del bucket S3 si no se crea con Terraform"
+  type        = string
+  default     = ""
+}

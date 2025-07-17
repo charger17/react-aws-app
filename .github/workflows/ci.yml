@@ -70,6 +70,12 @@ jobs:
         working-directory: infra
         run: terraform apply -auto-approve
 
+      - name: Terraform Output
+        working-directory: infra
+        id: tf_output
+        run: terraform output -json > tf_output.json
+
+
   deploy-to-s3:
     runs-on: ubuntu-latest
     needs: terraform
@@ -91,12 +97,19 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      - name: Get CloudFront Distribution ID
+        id: get_cdn_id
+        run: |
+          cdn_id=$(jq -r '.cloudfront_distribution_id.value' infra/tf_output.json)
+          echo "cdn_id=$cdn_id" >> $GITHUB_OUTPUT
+
       - name: Deploy to S3
         run: |
           aws s3 sync dist/ s3://react-aws-app-bucket-charger17 --delete
-      
+
       - name: Invalidate CloudFront Cache
         run: |
-          aws cloudfront create-invalidation --distribution-id DISTRIBUTION_ID --paths "/*"
+          aws cloudfront create-invalidation --distribution-id ${{ steps.get_cdn_id.outputs.cdn_id }} --paths "/*"
+
 
 

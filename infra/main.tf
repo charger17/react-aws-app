@@ -16,23 +16,26 @@ resource "aws_s3_bucket" "react_app_bucket" {
   count  = var.create_bucket ? 1 : 0
 
   bucket = var.s3_bucket_name
-
   acl    = "private"
 
   versioning {
     enabled = true
   }
 
-  server_side_encryption_configuration {
-    rule {
-      apply_server_side_encryption_by_default {
-        sse_algorithm = "AES256"
-      }
-    }
-  }
-
   lifecycle {
     prevent_destroy = true
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "default" {
+  count  = var.create_bucket ? 1 : 0
+
+  bucket = aws_s3_bucket.react_app_bucket[0].id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
   }
 }
 
@@ -64,7 +67,7 @@ resource "aws_cloudfront_distribution" "cdn" {
   comment         = "CloudFront Distribution for React App"
 
   origin {
-    domain_name = aws_s3_bucket.react_app_bucket[0].bucket_regional_domain_name
+    domain_name = var.create_bucket ? aws_s3_bucket.react_app_bucket[0].bucket_regional_domain_name : var.s3_static_domain
     origin_id   = "S3-react-app"
 
     s3_origin_config {
@@ -97,7 +100,7 @@ resource "aws_cloudfront_distribution" "cdn" {
     }
   }
 
-  price_class = "PriceClass_100" # Usa solo regiones económicas (US, Europa)
+  price_class = "PriceClass_100"
 
   tags = {
     Environment = var.environment
