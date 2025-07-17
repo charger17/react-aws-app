@@ -4,8 +4,8 @@ variable "aws_region" {
   default     = "us-east-1"
 
   validation {
-    condition     = can(regex("^us|^eu|^ap", var.aws_region))
-    error_message = "Solo se permiten regiones que empiecen con 'us', 'eu', o 'ap'."
+    condition     = can(regex("^(us|eu|ap)-[a-z]+-[0-9]$", var.aws_region))
+    error_message = "La región debe tener formato como us-east-1, eu-west-3, ap-southeast-2."
   }
 }
 

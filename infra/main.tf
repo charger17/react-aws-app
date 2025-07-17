@@ -18,14 +18,23 @@ resource "aws_s3_bucket" "react_app_bucket" {
   bucket = var.s3_bucket_name
   acl    = "private"
 
-  versioning {
-    enabled = true
-  }
+  force_destroy = true
 
   lifecycle {
     prevent_destroy = true
   }
 }
+
+resource "aws_s3_bucket_versioning" "react_app_bucket_versioning" {
+  count  = var.create_bucket ? 1 : 0
+
+  bucket = aws_s3_bucket.react_app_bucket[0].id
+
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "default" {
   count = var.create_bucket ? 1 : 0
