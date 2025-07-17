@@ -138,43 +138,39 @@ jobs:
     needs: terraform
 
     steps:
-      - name: Download terraform output
-        uses: actions/download-artifact@v4
-        with:
-          name: terraform-output
-          path: infra
+    - name: Download terraform output
+      uses: actions/download-artifact@v4
+      with:
+        name: terraform-output
+        path: infra
 
-      - name: Extract EC2 public IP
-        id: get_ec2_ip
-        run: |
-          ec2_ip=$(jq -r '.ec2_instance_public_ip.value' infra/tf_output.json)
-          echo "EC2 public IP: $ec2_ip"
-          echo "ec2_ip=$ec2_ip" >> $GITHUB_OUTPUT
+    - name: Extract EC2 public IP
+      id: get_ec2_ip
+      run: |
+        ec2_ip=$(jq -r '.ec2_instance_public_ip.value' infra/tf_output.json)
+        echo "EC2 public IP: $ec2_ip"
+        echo "ec2_ip=$ec2_ip" >> $GITHUB_OUTPUT
 
-      - name: Download build artifact
-        uses: actions/download-artifact@v4
-        with:
-          name: react-build
-          path: dist/
+    - name: Download build artifact
+      uses: actions/download-artifact@v4
+      with:
+        name: react-build
+        path: dist/
 
-      - name: Copy build files to EC2
-        uses: appleboy/scp-action@v0.1.6
-        with:
-          host: ${{ steps.get_ec2_ip.outputs.ec2_ip }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          source: "dist/*"
-          target: "/home/ubuntu/react-app/"
+    - name: Copy React build to EC2
+      uses: appleboy/scp-action@v0.1.1
+      with:
+        host: ${{ steps.get_ec2_ip.outputs.ec2_ip }}
+        username: ubuntu
+        key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+        source: "dist/*"
+        target: "/var/www/html/"
 
-      - name: Deploy React app on EC2 via SSH
-        uses: appleboy/ssh-action@v0.1.9
-        with:
-          host: ${{ steps.get_ec2_ip.outputs.ec2_ip }}
-          username: ubuntu
-          key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
-          script: |
-            sudo apt update
-            sudo apt install -y awscli nginx
-            sudo rm -rf /var/www/html/*
-            aws s3 sync s3://react-aws-app-bucket-charger17 /var/www/html/
-            sudo systemctl restart nginx
+    - name: Restart nginx on EC2
+      uses: appleboy/ssh-action@v0.1.9
+      with:
+        host: ${{ steps.get_ec2_ip.outputs.ec2_ip }}
+        username: ubuntu
+        key: ${{ secrets.EC2_SSH_PRIVATE_KEY }}
+        script: |
+          sudo systemctl restart nginx
