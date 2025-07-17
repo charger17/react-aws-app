@@ -172,5 +172,5 @@ output "cloudfront_domain_name" {
 }
 
 output "cloudfront_distribution_id" {
-  value = var.create_bucket ? aws_cloudfront_distribution.cdn[0].id : (length(aws_cloudfront_distribution.cdn_external) > 0 ? aws_cloudfront_distribution.cdn_external[0].id : "")
+  value = var.create_bucket && length(aws_cloudfront_distribution.cdn) > 0 ? aws_cloudfront_distribution.cdn[0].id : ( length(aws_cloudfront_distribution.cdn_external) > 0 ? aws_cloudfront_distribution.cdn_external[0].id : "")
 }

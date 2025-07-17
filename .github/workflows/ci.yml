@@ -119,7 +119,12 @@ jobs:
         run: |
           cdn_id=$(jq -r '.cloudfront_distribution_id.value' infra/tf_output.json)
           echo "Extracted CDN ID: $cdn_id"
+          if [ -z "$cdn_id" ]; then
+            echo "Error: CloudFront Distribution ID is empty"
+            exit 1
+          fi
           echo "cdn_id=$cdn_id" >> $GITHUB_OUTPUT
+
 
       - name: Deploy to S3
         run: aws s3 sync dist/ s3://react-aws-app-bucket-charger17 --delete
