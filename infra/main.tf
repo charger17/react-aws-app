@@ -28,9 +28,9 @@ resource "aws_s3_bucket" "react_app_bucket" {
 }
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "default" {
-  count  = var.create_bucket ? 1 : 0
+  count = var.create_bucket ? 1 : 0
 
-  bucket = aws_s3_bucket.react_app_bucket[count.index].id
+  bucket = aws_s3_bucket.react_app_bucket[0].id
 
   rule {
     apply_server_side_encryption_by_default {
@@ -44,28 +44,21 @@ resource "aws_cloudfront_origin_access_identity" "origin_access_identity" {
 }
 
 resource "aws_s3_bucket_policy" "bucket_policy" {
-  count  = var.create_bucket ? 1 : 0
+  count = var.create_bucket ? 1 : 0
 
-  bucket = aws_s3_bucket.react_app_bucket[count.index].id
+  bucket = aws_s3_bucket.react_app_bucket[0].id
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Principal = {
-          AWS = aws_cloudfront_origin_access_identity.origin_access_identity.iam_arn
-        }
-        Action   = "s3:GetObject"
-        Resource = "${aws_s3_bucket.react_app_bucket[count.index].arn}/*"
+    Statement = [{
+      Effect = "Allow"
+      Principal = {
+        AWS = aws_cloudfront_origin_access_identity.origin_access_identity.iam_arn
       }
-    ]
+      Action   = "s3:GetObject"
+      Resource = "${aws_s3_bucket.react_app_bucket[0].arn}/*"
+    }]
   })
-}
-
-# Variable intermedia para evitar error si bucket no se crea
-locals {
-  bucket_domain_name = var.create_bucket ? aws_s3_bucket.react_app_bucket[0].bucket_regional_domain_name : var.s3_bucket_name
 }
 
 resource "aws_cloudfront_distribution" "cdn" {
@@ -76,11 +69,11 @@ resource "aws_cloudfront_distribution" "cdn" {
   default_root_object = "index.html"
 
   origin {
-    domain_name = local.bucket_domain_name
+    domain_name = var.create_bucket ? aws_s3_bucket.react_app_bucket[0].bucket_regional_domain_name : var.s3_static_domain
     origin_id   = "S3-react-app"
 
     s3_origin_config {
-      origin_access_identity = "origin-access-identity/cloudfront/${aws_cloudfront_origin_access_identity.origin_access_identity.id}"
+      origin_access_identity = var.create_bucket ? aws_cloudfront_origin_access_identity.origin_access_identity.cloudfront_access_identity_path : null
     }
   }
 
